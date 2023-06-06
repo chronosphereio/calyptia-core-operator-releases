@@ -20,7 +20,7 @@ on:
         default: calyptia/core-operator
 
 jobs:
-  trigger_release:
+  release:
     name: Create a public release for calyptia/core-operator.
     uses: ./.github/workflows/call-create-release.yaml
     with:

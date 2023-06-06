@@ -75,7 +75,7 @@ jobs:
           repo_token: ${{ secrets.ci-pat }}
           files: |
             ${{ steps.fetch_artifacts.outputs.artifacts }}
-          title: Release of ${{ inputs.release_tag }} artifacts.
+          title: Release ${{ inputs.release_tag }}
           automatic_release_tag: ${{ inputs.release_tag }}
           draft: false
           prerelease: false
