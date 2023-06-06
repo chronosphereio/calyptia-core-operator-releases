@@ -1,0 +1,81 @@
+name: Reusable workflow to create a release
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: The tag name for the release
+        required: true
+        type: string
+      artifact_names:
+        description: The names of the artifacts to fetch
+        required: false
+        type: string
+        default: |
+          manifest.yaml
+      repository:
+        description: The owner and name of the repository (e.g., owner/name)
+        required: false
+        type: string
+        default: calyptia/core-operator
+    secrets:
+      ci-pat:
+        description: Github PAT to use
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout API repo
+        uses: actions/checkout@v3
+        with:
+          repository: calyptia/core-operator-releases
+          token: ${{ secrets.ci-pat }}
+
+      - name: Fetch Artifacts from releases
+        id: fetch_artifacts
+        run: |
+          set -eux
+          repository="${{ inputs.repository }}"
+          releaseTag="${{ inputs.release_tag }}"
+          artifactNames="${{ inputs.artifact_names }}"
+
+          fetchedArtifacts=()
+          if [[ "$artifactNames" == *$'\n'* ]]; then
+            IFS=$'\n' read -rd '' -a artifacts <<< "$artifactNames"
+          else
+            artifacts=("$artifactNames")
+          fi
+
+          for artifactName in "${artifacts[@]}"; do
+            if [ -f "$artifactName" ]; then
+              rm "$artifactName"
+            fi
+            gh release download "$releaseTag" --pattern "$artifactName" -R "$repository"
+            fetchedArtifacts+=("$artifactName")
+          done
+
+          allArtifacts=$(IFS=$'\n'; echo "${fetchedArtifacts[*]}")
+          echo "artifacts=$allArtifacts" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.ci-pat }}
+
+      - name: Add, Commit, and Push Changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: Updated to $repository version ${{ inputs.release_tag }}
+          push: true
+
+      - name: Create Tag and Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.ci-pat }}
+          files: |
+            ${{ steps.fetch_artifacts.outputs.artifacts }}
+          title: Release of ${{ inputs.release_tag }} artifacts.
+          automatic_release_tag: ${{ inputs.release_tag }}
+          draft: false
+          prerelease: false
