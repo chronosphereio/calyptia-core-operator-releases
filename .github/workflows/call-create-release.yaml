@@ -27,6 +27,7 @@ on:
       ci-pat:
         description: Github PAT to use
         required: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,7 +39,6 @@ jobs:
         with:
           repository: calyptia/core-operator-releases
           token: ${{ secrets.ci-pat }}
-          path: releases
 
       - name: Fetch Artifacts from releases
         uses: actions/github-script@v5
@@ -51,10 +51,10 @@ jobs:
             const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
             async function fetchArtifacts() {
-              const owner = '${{ github.event.inputs.repository_owner }}';
-              const repo = '${{ github.event.inputs.repository }}';
+              const owner = '${{ inputs.repository_owner }}';
+              const repo = '${{ inputs.repository }}';
               const releaseTag = '${{ inputs.release_tag }}';
-              const artifactNames = '${{ github.event.inputs.artifact_names }}'.split('\n');
+              const artifactNames = '${{ inputs.artifact_names }}'.split('\n');
               const fetchedArtifacts = [];
 
               const releases = await octokit.rest.repos.listReleases({ owner, repo });
@@ -74,7 +74,7 @@ jobs:
 
                 const downloadUrl = asset.browser_download_url;
                 const response = await octokit.rest.repos.downloadReleaseAsset({ owner, repo, asset_id: asset.id, headers: { accept: 'application/octet-stream' } });
-                const destPath = `./releases/${artifactName}`;
+                const destPath = `./${artifactName}`;
                 fs.writeFileSync(destPath, response.data);
                 console.log(`Artifact ${artifactName} downloaded to ${destPath}.`);
                 fetchedArtifacts.push(destPath);
@@ -96,16 +96,11 @@ jobs:
         run: |
           git add -A .
           git commit -m "Updated to calyptia/core-operator version ${{ inputs.release_tag }}" -as
-        working-directory: releases
 
       - name: Create Tag
         run: |
           git tag ${{ inputs.release_tag }}
           git push origin ${{ inputs.release_tag }}
-        working-directory: releases
-
-      - run: |
-          cd releases
 
       - name: Create release for tag
         uses: softprops/action-gh-release@v1
