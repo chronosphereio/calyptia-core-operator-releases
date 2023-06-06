@@ -1,0 +1,37 @@
+name: Workflow to Trigger Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: The tag name for the release
+        required: true
+        type: string
+      artifact_names:
+        description: The names of the artifacts to fetch
+        required: false
+        type: string
+        default: |
+          manifest.yaml
+      repository_owner:
+        description: The owner of the repository
+        required: false
+        type: string
+        default: calyptia
+      repository:
+        description: The name of the repository
+        required: false
+        type: string
+        default: core-operator
+
+jobs:
+  trigger_release:
+    name: Create a public release for calyptia/core-operator.
+    uses: ./.github/workflows/call-create-release.yaml
+    with:
+      release_tag: ${{ github.event.inputs.release_tag }}
+      artifact_names: ${{ github.event.inputs.artifact_names }}
+      repository_owner: ${{ github.event.inputs.repository_owner }}
+      repository: ${{ github.event.inputs.repository }}
+    secrets:
+      ci-pat: ${{ secrets.CI_PAT }}

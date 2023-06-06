@@ -1,0 +1,118 @@
+name: Reusable workflow to create a release
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: The tag name for the release
+        required: true
+        type: string
+      artifact_names:
+        description: The names of the artifacts to fetch
+        required: false
+        type: string
+        default: |
+          manifest.yaml
+      repository_owner:
+        description: The owner of the repository
+        required: false
+        type: string
+        default: calyptia
+      repository:
+        description: The name of the repository
+        required: false
+        type: string
+        default: core-operator
+    secrets:
+      ci-pat:
+        description: Github PAT to use
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout API repo
+        uses: actions/checkout@v3
+        with:
+          repository: calyptia/core-operator-releases
+          token: ${{ secrets.ci-pat }}
+          path: releases
+
+      - name: Fetch Artifacts from releases
+        uses: actions/github-script@v5
+        id: fetch_artifacts
+        with:
+          script: |
+            const fs = require('fs');
+            const { Octokit } = require('@octokit/rest');
+
+            const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+            async function fetchArtifacts() {
+              const owner = '${{ github.event.inputs.repository_owner }}';
+              const repo = '${{ github.event.inputs.repository }}';
+              const releaseTag = '${{ inputs.release_tag }}';
+              const artifactNames = '${{ github.event.inputs.artifact_names }}'.split('\n');
+              const fetchedArtifacts = [];
+
+              const releases = await octokit.rest.repos.listReleases({ owner, repo });
+              const release = releases.data.find((r) => r.tag_name === releaseTag);
+              if (!release) {
+                console.error(`Release ${releaseTag} not found.`);
+                return;
+              }
+
+              for (const artifactName of artifactNames) {
+                const assets = await octokit.rest.repos.listReleaseAssets({ owner, repo, release_id: release.id });
+                const asset = assets.data.find((a) => a.name === artifactName);
+                if (!asset) {
+                  console.error(`Artifact ${artifactName} not found.`);
+                  continue;
+                }
+
+                const downloadUrl = asset.browser_download_url;
+                const response = await octokit.rest.repos.downloadReleaseAsset({ owner, repo, asset_id: asset.id, headers: { accept: 'application/octet-stream' } });
+                const destPath = `./releases/${artifactName}`;
+                fs.writeFileSync(destPath, response.data);
+                console.log(`Artifact ${artifactName} downloaded to ${destPath}.`);
+                fetchedArtifacts.push(destPath);
+              }
+
+              return fetchedArtifacts;
+            }
+
+            const artifacts = await fetchArtifacts().catch((error) => {
+              console.error('Error fetching artifacts:', error);
+              process.exit(1);
+            });
+
+            core.setOutput('artifacts', artifacts.join('\n'));
+        env:
+          GITHUB_TOKEN: ${{ secrets.ci-pat }}
+
+      - name: Add & commit latest changes
+        run: |
+          git add -A .
+          git commit -m "Updated to calyptia/core-operator version ${{ inputs.release_tag }}" -as
+        working-directory: releases
+
+      - name: Create Tag
+        run: |
+          git tag ${{ inputs.release_tag }}
+          git push origin ${{ inputs.release_tag }}
+        working-directory: releases
+
+      - run: |
+          cd releases
+
+      - name: Create release for tag
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            Release of ${{ inputs.release_tag }} artifacts.
+          files: |
+            ${{ steps.fetch_artifacts.outputs.artifacts }}
+          fail_on_unmatched_files: false
+          generate_release_notes: true
