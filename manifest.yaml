@@ -656,7 +656,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: ghcr.io/calyptia/core-operator:v1.0.0-alpha1
+        image: ghcr.io/calyptia/core-operator:v1.0.0-alpha3
         livenessProbe:
           httpGet:
             path: /healthz
