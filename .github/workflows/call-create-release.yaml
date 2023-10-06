@@ -30,7 +30,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout API repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: calyptia/core-operator-releases
           token: ${{ secrets.ci-pat }}
