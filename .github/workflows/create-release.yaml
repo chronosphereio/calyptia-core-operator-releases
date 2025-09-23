@@ -28,4 +28,4 @@ jobs:
       artifact_names: ${{ github.event.inputs.artifact_names }}
       repository: ${{ github.event.inputs.repository }}
     secrets:
-      ci-pat: ${{ secrets.CI_PAT }}
+      ci-pat: ${{ secrets.CALYPTIA_CI_PAT }}
