@@ -70,12 +70,12 @@ jobs:
           push: true
 
       - name: Create Tag and Release
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
-          repo_token: ${{ secrets.ci-pat }}
+          token: ${{ secrets.ci-pat }}
           files: |
             ${{ steps.fetch_artifacts.outputs.artifacts }}
-          title: Release ${{ inputs.release_tag }}
-          automatic_release_tag: ${{ inputs.release_tag }}
+          name: Release ${{ inputs.release_tag }}
+          tag_name: ${{ inputs.release_tag }}
           draft: false
           prerelease: false
