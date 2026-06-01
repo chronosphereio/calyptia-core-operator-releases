@@ -30,7 +30,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout API repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: calyptia/core-operator-releases
           token: ${{ secrets.ci-pat }}
@@ -64,18 +64,18 @@ jobs:
           GH_TOKEN: ${{ secrets.ci-pat }}
 
       - name: Add, Commit, and Push Changes
-        uses: EndBug/add-and-commit@v9
+        uses: EndBug/add-and-commit@290ea2c423ad77ca9c62ae0f5b224379612c0321 # v10.0.0
         with:
           message: Updated to $repository version ${{ inputs.release_tag }}
           push: true
 
       - name: Create Tag and Release
-        uses: marvinpinto/action-automatic-releases@latest
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
-          repo_token: ${{ secrets.ci-pat }}
+          token: ${{ secrets.ci-pat }}
           files: |
             ${{ steps.fetch_artifacts.outputs.artifacts }}
-          title: Release ${{ inputs.release_tag }}
-          automatic_release_tag: ${{ inputs.release_tag }}
+          name: Release ${{ inputs.release_tag }}
+          tag_name: ${{ inputs.release_tag }}
           draft: false
           prerelease: false
