@@ -30,7 +30,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout API repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: calyptia/core-operator-releases
           token: ${{ secrets.ci-pat }}
@@ -70,12 +70,12 @@ jobs:
           push: true
 
       - name: Create Tag and Release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        uses: marvinpinto/action-automatic-releases@latest
         with:
-          token: ${{ secrets.ci-pat }}
+          repo_token: ${{ secrets.ci-pat }}
           files: |
             ${{ steps.fetch_artifacts.outputs.artifacts }}
-          name: Release ${{ inputs.release_tag }}
-          tag_name: ${{ inputs.release_tag }}
+          title: Release ${{ inputs.release_tag }}
+          automatic_release_tag: ${{ inputs.release_tag }}
           draft: false
           prerelease: false
